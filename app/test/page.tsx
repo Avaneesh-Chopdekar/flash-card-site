@@ -1,20 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 interface QA {
   q: string;
   a: string;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = "false";
+export const fetchCache = "force-no-store";
+
 export default function TestPage() {
   const searchParams = useSearchParams();
-  const data: QA[] = JSON.parse(searchParams.get("data") || "");
+  const [data, setData] = useState<QA[]>([]);
   const [showAns, setShowAns] = useState(false);
   const [index, setIndex] = useState(0);
   const { toast } = useToast();
@@ -33,9 +36,22 @@ export default function TestPage() {
       });
     }
   }
+
+  useEffect(() => {
+    if (searchParams.get("data")) {
+      setData(JSON.parse(searchParams.get("data") || ""));
+      setData((prevState) => prevState.sort(() => Math.random() - 0.5));
+    }
+  }, []);
+
   return (
     <main className="flex items-center justify-center mt-8">
-      {data.length > 0 ? (
+      {(searchParams.get("data") === "[]" || !searchParams.get("data")) && (
+        <p className="h-[50vh] flex items-center justify-center">
+          Add Question Answers Before Testing Yourself
+        </p>
+      )}
+      {data.length > 0 && (
         <div className="flex flex-col items-center justify-center">
           <div className="group h-80 w-80 [perspective:1000px]">
             <div
@@ -122,10 +138,6 @@ export default function TestPage() {
             Share This Test
           </Button>
         </div>
-      ) : (
-        <p className="h-[50vh] flex items-center justify-center">
-          Add Question Answers Before Testing Yourself
-        </p>
       )}
     </main>
   );
